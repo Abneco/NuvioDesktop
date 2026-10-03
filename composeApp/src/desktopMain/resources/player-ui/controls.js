@@ -1462,7 +1462,9 @@ filterRows.forEach(filterRow => {
     if (filterRow.hasPointerCapture(event.pointerId)) filterRow.scrollLeft -= event.movementX;
   };
 
-  filterRow.addEventListener("pointerdown", prepareDrag);
+  filterRow.addEventListener("pointerdown", (event) => {
+    if (event.button == 0) prepareDrag(event);
+  });
   filterRow.addEventListener("pointermove", drag);
   filterRow.addEventListener("pointerup", clearDrag);
   filterRow.addEventListener("pointercancel", clearDrag);
