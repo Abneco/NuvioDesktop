@@ -53,6 +53,8 @@ const openingLogoFillClip = document.getElementById("openingLogoFillClip");
 const openingLogoFill = document.getElementById("openingLogoFill");
 const openingTitle = document.getElementById("openingTitle");
 const openingSpinner = document.getElementById("openingSpinner");
+const openingLoadingIndicator = window.createLoadingIndicator(openingSpinner);
+const bufferingLoadingIndicator = window.createLoadingIndicator(bufferingStatus.querySelector("canvas"));
 const openingStatus = document.getElementById("openingStatus");
 const openingMessage = document.getElementById("openingMessage");
 const openingProgressTrack = document.getElementById("openingProgressTrack");
@@ -744,6 +746,11 @@ const applyTheme = () => {
   const gradientColors = Array.isArray(state.themeAccentGradientColors)
     ? state.themeAccentGradientColors.map(color => cssColorOrFallback(color, "")).filter(Boolean)
     : [];
+  const loadingColors = gradientColors.length > 0
+    ? gradientColors
+    : [cssColorOrFallback(state.themeAccentColor, "#2f6fed")];
+  openingLoadingIndicator.setColors(loadingColors);
+  bufferingLoadingIndicator.setColors(loadingColors);
   if (gradientColors.length > 1) {
     style.setProperty("--theme-accent-gradient", `linear-gradient(to right, ${gradientColors.join(", ")})`);
     style.setProperty("--theme-accent-gradient-vertical", `linear-gradient(to bottom, ${gradientColors.join(", ")})`);
@@ -2091,6 +2098,7 @@ const renderOpeningOverlay = suppress => {
   openingTitle.textContent = titleText;
   openingTitle.hidden = Boolean(logoUrl || !titleText);
   openingSpinner.hidden = Boolean(logoUrl || titleText);
+  openingLoadingIndicator.setActive(showOpening && !openingSpinner.hidden);
 
   openingMessage.textContent = messageText;
   openingStatus.hidden = !(messageText || showHorizontalProgress);
@@ -2395,6 +2403,7 @@ const renderChrome = () => {
   const showBuffering = Boolean(!showError && state.isLoading && !activeModal && !showOpening);
   bufferingStatus.classList.toggle("visible", showBuffering);
   bufferingStatus.setAttribute("aria-hidden", showBuffering ? "false" : "true");
+  bufferingLoadingIndicator.setActive(showBuffering);
 
   setVisible(submitIntroButton, Boolean(state.showSubmitIntro));
   setVisible(videoSettingsButton, Boolean(state.showVideoSettings));
