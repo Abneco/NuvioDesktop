@@ -289,9 +289,8 @@ actual object P2pStreamingEngine {
     }
 
     private suspend fun stopPreparedStream(activeEngine: NuvioEngine?, streamId: String) {
-        if (activeEngine == null) return
         try {
-            activeEngine.stopStream(streamId)
+            activeEngine?.stopStream(streamId)
         } catch (cancellation: CancellationException) {
             throw cancellation
         } catch (error: Exception) {

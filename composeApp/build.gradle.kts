@@ -1179,7 +1179,7 @@ kotlin {
                 implementation(libs.ksoup)
                 implementation(libs.sentry.jvm)
                 implementation(libs.jna)
-                implementation(files("libs/nuvio-engine-jvm-0.1.2.jar"))
+                implementation(files("libs/nuvio-engine-jvm-0.1.4.jar"))
             }
         }
         val androidHostTest by getting {
