@@ -37,6 +37,11 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalUriHandler
@@ -1244,6 +1249,16 @@ internal fun MainAppContent(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(MaterialTheme.nuvio.colors.background)
+                    .onKeyEvent { event ->
+                        if (event.type == KeyEventType.KeyDown && event.key == Key.Escape) {
+                            if (!PlatformBackDispatcher.dispatch()) {
+                                navController.popBackStack()
+                            }
+                            true
+                        } else {
+                            false
+                        }
+                    }
                     .pointerInput(Unit) {
                         awaitPointerEventScope {
                             while (true) {
