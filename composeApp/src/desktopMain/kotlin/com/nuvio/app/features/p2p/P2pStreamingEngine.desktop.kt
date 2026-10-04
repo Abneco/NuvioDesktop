@@ -89,18 +89,14 @@ actual object P2pStreamingEngine {
             _cacheState.value = _cacheState.value.copy(isClearing = true)
             try {
                 val activeEngine = ensureEngine()
-                if (!_cacheState.value.hasMeasurement) {
-                    delay(SAMPLE_INTERVAL_MS + 100L)
-                    val initial = activeEngine.stats.value
-                    updateCacheState(initial.diskCacheUsedBytes, initial.diskCacheProtectedBytes)
-                }
                 val before = activeEngine.stats.value
                 activeEngine.reclaimDiskCache(0L)
                 delay(SAMPLE_INTERVAL_MS + 100L)
                 val after = activeEngine.stats.value
                 updateCacheState(after.diskCacheUsedBytes, after.diskCacheProtectedBytes)
                 P2pCacheClearResult(
-                    reclaimedBytes = (before.diskCacheUsedBytes - after.diskCacheUsedBytes).coerceAtLeast(0L),
+                    reclaimedBytes = (after.diskCacheReclaimedBytes - before.diskCacheReclaimedBytes)
+                        .coerceAtLeast(0L),
                     remainingBytes = after.diskCacheUsedBytes,
                     protectedBytes = after.diskCacheProtectedBytes,
                 )
@@ -312,13 +308,14 @@ actual object P2pStreamingEngine {
         currentCoroutineContext().ensureActive()
         removeLegacyTorrServerData()
         val stateDirectory = DesktopStorage.rootDir.resolve("nuvio-engine/state").toFile()
-        val cacheDirectory = DesktopStorage.cacheDir.resolve("nuvio-engine/payload").toFile()
+        val cacheDirectory = DesktopStorage.cacheDir.resolve("nuvio-engine").toFile()
         check(stateDirectory.mkdirs() || stateDirectory.isDirectory) {
             "Could not create the Nuvio Engine state directory"
         }
         check(cacheDirectory.mkdirs() || cacheDirectory.isDirectory) {
             "Could not create the Nuvio Engine cache directory"
         }
+        migrateNestedPayloadDirectory(cacheDirectory)
         val activeRuntime = runtime
         return activeRuntime.create(
             buildNuvioEngineConfig(
@@ -364,6 +361,13 @@ actual object P2pStreamingEngine {
     private fun observeEngineEvents(activeEngine: NuvioEngine) {
         engineEventsJob?.cancel()
         engineEventsJob = scope.launch {
+            launch {
+                activeEngine.stats.collect { stats ->
+                    if (engine === activeEngine) {
+                        updateCacheState(stats.diskCacheUsedBytes, stats.diskCacheProtectedBytes)
+                    }
+                }
+            }
             activeEngine.events.collect { event ->
                 diagnostics.i {
                     "event type=${event.type} requestId=${event.requestId} torrent=${diagnosticId(event.torrentId)} " +
@@ -428,7 +432,6 @@ actual object P2pStreamingEngine {
                         null
                     }
                     val aggregate = activeEngine.stats.value
-                    updateCacheState(aggregate.diskCacheUsedBytes, aggregate.diskCacheProtectedBytes)
                     val now = nowMs()
                     if (now >= nextSampleAtMs) {
                         nextSampleAtMs = now + SAMPLE_INTERVAL_MS
