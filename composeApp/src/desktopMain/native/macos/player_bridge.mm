@@ -1315,8 +1315,18 @@ static void setMpvOptionString(mpv_handle *mpv, const char *name, const char *va
                                                  name:NSViewBoundsDidChangeNotification
                                                object:_hostView];
     _didFocusControlsWebView = NO;
+    // A reparent is a discrete move, not an animated resize. Without this reset the
+    // size difference reads as a layout jump and holds the layer in resize mode for
+    // the 1.25 s transition plus settle delay; while paused, nothing draws until then.
+    _lastAppliedNativeLayoutBounds = NSZeroRect;
+    _lastAppliedNativeLayoutWasLiveResize = NO;
+    _lightweightResizeSettleUntil = 0.0;
+    if (!_fullscreenTransitionActive) {
+        [_videoView setFullscreenTransitionActive:NO];
+    }
     [self layoutNativeSubviews];
     [_videoView updateMetalLayerLayout];
+    [_videoView scheduleRenderUpdate];
     [self requestFocus];
 }
 
@@ -1561,6 +1571,9 @@ static void setMpvOptionString(mpv_handle *mpv, const char *name, const char *va
     [CATransaction commit];
 
     if (liveResize || settlingFromResize) {
+        // The resize-mode layer only draws when asked. A paused player gets no
+        // mpv frame callbacks, so redraw the current frame at the new size here.
+        [_videoView scheduleRenderUpdate];
         if (_mpv) {
             [self schedulePostResizeRefreshWithReason:liveResize ? @"live-layout" : @"settle-layout"];
         }
