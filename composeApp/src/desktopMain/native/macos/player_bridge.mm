@@ -195,6 +195,8 @@ static constexpr double kMaxVolumePercent = 200.0;
 - (void)handleFullscreenTransitionTimer:(NSTimer *)timer;
 - (void)schedulePostResizeRefreshWithReason:(NSString *)reason;
 - (void)handleResizeSettleTimer:(NSTimer *)timer;
+- (void)scheduleControlsResizeEnded;
+- (void)handleControlsResizeEndTimer:(NSTimer *)timer;
 - (void)configureHdrForCurrentScreenWithReason:(NSString *)reason force:(BOOL)force;
 - (void)applyHdrForPolledGamma:(NSString *)gamma primaries:(NSString *)primaries reason:(NSString *)reason force:(BOOL)force;
 - (NSEvent *)handleMediaKeyEvent:(NSEvent *)event;
@@ -1082,6 +1084,7 @@ static void setMpvOptionString(mpv_handle *mpv, const char *name, const char *va
     NSTimer *_timer;
     NSTimer *_resizeSettleTimer;
     NSTimer *_fullscreenTransitionTimer;
+    NSTimer *_controlsResizeEndTimer;
     id _mediaKeyMonitor;
     BOOL _remoteCommandsActive;
     NSString *_lastNowPlayingTitle;
@@ -1332,6 +1335,32 @@ static void setMpvOptionString(mpv_handle *mpv, const char *name, const char *va
     _lastControlsViewportNudgeSize = bounds.size;
     _lastControlsViewportNudgeAt = now;
     NSString *script = @"window.nuvioNativeViewportChanged ? window.nuvioNativeViewportChanged() : window.dispatchEvent(new Event('resize'));";
+    [_webView evaluateJavaScript:script completionHandler:nil];
+    [self scheduleControlsResizeEnded];
+}
+
+// The controls page hides PiP chrome between viewport-changed and resize-ended.
+// Windows reports the end of its modal size loop; AppKit has no equivalent for
+// programmatic and reparent-driven size changes, so close the pair once layout is quiet.
+- (void)scheduleControlsResizeEnded {
+    [_controlsResizeEndTimer invalidate];
+    _controlsResizeEndTimer = [NSTimer scheduledTimerWithTimeInterval:0.25
+                                                               target:self
+                                                             selector:@selector(handleControlsResizeEndTimer:)
+                                                             userInfo:nil
+                                                              repeats:NO];
+}
+
+- (void)handleControlsResizeEndTimer:(NSTimer *)timer {
+    _controlsResizeEndTimer = nil;
+    if (!_webView) {
+        return;
+    }
+    if (_hostView.inLiveResize || _hostView.window.inLiveResize || _fullscreenTransitionActive) {
+        [self scheduleControlsResizeEnded];
+        return;
+    }
+    NSString *script = @"window.nuvioNativeResizeEnded ? window.nuvioNativeResizeEnded() : document.getElementById('playerRoot')?.classList.remove('native-resizing');";
     [_webView evaluateJavaScript:script completionHandler:nil];
 }
 
@@ -1881,6 +1910,8 @@ static void setMpvOptionString(mpv_handle *mpv, const char *name, const char *va
     _resizeSettleTimer = nil;
     [_fullscreenTransitionTimer invalidate];
     _fullscreenTransitionTimer = nil;
+    [_controlsResizeEndTimer invalidate];
+    _controlsResizeEndTimer = nil;
     if (_mediaKeyMonitor) {
         [NSEvent removeMonitor:_mediaKeyMonitor];
         _mediaKeyMonitor = nil;
