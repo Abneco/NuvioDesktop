@@ -2584,11 +2584,6 @@ static void nuvioMpvWakeup(void *ctx) {
         [self syncControls];
         return;
     }
-    if ([type isEqualToString:@"selectAudioTrack"] && value) {
-        [self selectAudioTrackId:(int)llround(value.doubleValue)];
-        [self syncControls];
-        return;
-    }
     if ([type isEqualToString:@"selectSubtitleTrack"] && value) {
         [self selectSubtitleTrackId:(int)llround(value.doubleValue)];
         [self syncControls];
