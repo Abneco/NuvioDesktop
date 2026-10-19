@@ -5,13 +5,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.DefaultAlpha
-import androidx.compose.ui.graphics.FilterQuality
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.graphics.toComposeImageBitmap
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import coil3.Extras
 import kotlin.math.roundToInt
@@ -27,6 +24,9 @@ import org.jetbrains.skia.Codec
 import org.jetbrains.skia.Data
 import org.jetbrains.skia.Image as SkiaImage
 import org.jetbrains.skia.ImageInfo
+import org.jetbrains.skia.Paint as SkiaPaint
+import org.jetbrains.skia.Rect
+import org.jetbrains.skia.SamplingMode
 
 /**
  * Per-request switch for animated playback of GIF / animated WebP images.
@@ -67,9 +67,10 @@ internal class AnimatedSkiaImage(
 
 internal class AnimatedSkiaPainter(source: AnimatedSkiaImage) : Painter() {
     private val runner = FrameRunner(source) { frame = it }
-    private var frame: ImageBitmap by mutableStateOf(source.firstFrame.toComposeImageBitmap())
-    private var alpha: Float = DefaultAlpha
-    private var colorFilter: ColorFilter? = null
+    private var frame: SkiaImage by mutableStateOf(source.firstFrame)
+
+    // One native paint per painter, reused for every draw.
+    private val paint = SkiaPaint()
 
     override val intrinsicSize: Size = Size(source.width.toFloat(), source.height.toFloat())
 
@@ -77,31 +78,31 @@ internal class AnimatedSkiaPainter(source: AnimatedSkiaImage) : Painter() {
         // Drawing is the only signal we get that someone still sees this image; the ticker stops on its own
         // once draws stop, so playback never outlives the composable showing it.
         AnimationTicker.markDrawn(runner)
-        val current = frame
-        drawImage(
-            image = current,
-            srcOffset = IntOffset.Zero,
-            srcSize = IntSize(current.width, current.height),
-            dstOffset = IntOffset.Zero,
-            dstSize = IntSize(
-                width = size.width.roundToInt().coerceAtLeast(1),
-                height = size.height.roundToInt().coerceAtLeast(1),
-            ),
-            alpha = alpha,
-            colorFilter = colorFilter,
-            filterQuality = FilterQuality.Medium,
-        )
+        val image = frame
+        // The Skia image is drawn directly. Compose's ImageBitmap wrapper would allocate a native copy of every
+        // frame that is only freed when the JVM garbage-collects, which grows native memory into gigabytes.
+        drawIntoCanvas { canvas ->
+            canvas.nativeCanvas.drawImageRect(
+                image,
+                Rect.makeWH(image.width.toFloat(), image.height.toFloat()),
+                Rect.makeWH(
+                    size.width.roundToInt().coerceAtLeast(1).toFloat(),
+                    size.height.roundToInt().coerceAtLeast(1).toFloat(),
+                ),
+                SamplingMode.LINEAR,
+                paint,
+                true,
+            )
+        }
     }
 
     override fun applyAlpha(alpha: Float): Boolean {
-        this.alpha = alpha
+        paint.alpha = (alpha * 255f).roundToInt().coerceIn(0, 255)
         return true
     }
 
-    override fun applyColorFilter(colorFilter: ColorFilter?): Boolean {
-        this.colorFilter = colorFilter
-        return true
-    }
+    // Not handled here: returning false makes Compose draw this painter through a layer that applies the filter.
+    override fun applyColorFilter(colorFilter: ColorFilter?): Boolean = colorFilter == null
 }
 
 private const val StaleAfterMs = 400L
@@ -113,7 +114,7 @@ private fun nowMs(): Long = System.nanoTime() / 1_000_000L
 /** Decodes the frames of one animation, one frame at a time, into a reused working bitmap. */
 private class FrameRunner(
     private val source: AnimatedSkiaImage,
-    private val publish: (ImageBitmap) -> Unit,
+    private val publish: (SkiaImage) -> Unit,
 ) {
     @Volatile var lastDrawnAtMs: Long = 0L
     @Volatile var registered: Boolean = false
@@ -148,7 +149,7 @@ private class FrameRunner(
             lastDecoded = index
 
             val image = SkiaImage.makeFromBitmap(bitmap)
-            publish(image.toComposeImageBitmap())
+            publish(image)
             lastPublished = image
             ring[ringPos]?.takeIf { it !== image }?.close()
             ring[ringPos] = image
