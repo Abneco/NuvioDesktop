@@ -8,6 +8,7 @@ import androidx.compose.ui.graphics.DefaultAlpha
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
+import coil3.ImageLoader
 import coil3.compose.AsyncImagePainter
 
 internal enum class NuvioDesktopImageScaling {
@@ -33,4 +34,7 @@ internal expect fun NuvioAsyncImage(
     filterQuality: FilterQuality? = null,
     clipToBounds: Boolean = true,
     desktopImageScaling: NuvioDesktopImageScaling = NuvioDesktopImageScaling.Auto,
+    imageLoader: ImageLoader? = null,
+    /** Desktop only: play animated GIF / WebP instead of showing the first frame. Other platforms already animate. */
+    desktopAnimatedImages: Boolean = false,
 )

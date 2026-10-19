@@ -16,3 +16,8 @@ internal actual fun ImageLoader.Builder.configurePlatformImageLoader(): ImageLoa
         add(SkiaGifDecoder.Factory())
     }
 }
+
+internal actual fun ImageLoader.Builder.configurePlatformBadgeImageLoader(): ImageLoader.Builder =
+    components {
+        add(SkiaGifDecoder.Factory())
+    }

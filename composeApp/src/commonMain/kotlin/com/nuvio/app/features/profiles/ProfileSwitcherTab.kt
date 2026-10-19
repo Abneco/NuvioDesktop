@@ -1090,6 +1090,7 @@ private fun PopupProfileBubble(
                         contentDescription = profile.name,
                         modifier = Modifier.size(48.dp).clip(tokens.shapes.avatar),
                         contentScale = ContentScale.Crop,
+                        desktopAnimatedImages = true,
                     )
                 } else if (profile.name.isNotBlank()) {
                     Text(
@@ -1208,6 +1209,7 @@ fun ActiveProfileMiniAvatar(
                 contentDescription = profile.name,
                 modifier = Modifier.size(size.dp).clip(tokens.shapes.avatar),
                 contentScale = ContentScale.Crop,
+                desktopAnimatedImages = true,
             )
         } else if (profile.name.isNotBlank()) {
             Text(

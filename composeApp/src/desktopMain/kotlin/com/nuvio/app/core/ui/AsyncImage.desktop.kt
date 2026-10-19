@@ -18,7 +18,9 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import coil3.BitmapImage
 import coil3.Image
+import coil3.ImageLoader
 import coil3.PlatformContext
+import coil3.SingletonImageLoader
 import coil3.compose.AsyncImage
 import coil3.compose.AsyncImagePainter
 import coil3.compose.LocalPlatformContext
@@ -59,17 +61,19 @@ internal actual fun NuvioAsyncImage(
     filterQuality: FilterQuality?,
     clipToBounds: Boolean,
     desktopImageScaling: NuvioDesktopImageScaling,
+    imageLoader: ImageLoader?,
+    desktopAnimatedImages: Boolean,
 ) {
     val context = LocalPlatformContext.current
     val effectiveDesktopImageScaling = remember(desktopImageScaling) {
         if (IsWindowsDesktop) desktopImageScaling else NuvioDesktopImageScaling.Disabled
     }
-    val requestModel = remember(context, model, effectiveDesktopImageScaling) {
-        if (effectiveDesktopImageScaling == NuvioDesktopImageScaling.Disabled) {
-            model
-        } else {
-            model.withDesktopHighQualitySize(context)
-        }
+    val requestModel = remember(context, model, effectiveDesktopImageScaling, desktopAnimatedImages) {
+        model.withDesktopImageOptions(
+            context = context,
+            highQualitySize = effectiveDesktopImageScaling != NuvioDesktopImageScaling.Disabled,
+            animated = desktopAnimatedImages,
+        )
     }
     val transform: (AsyncImagePainter.State) -> AsyncImagePainter.State = remember(
         placeholder,
@@ -77,13 +81,17 @@ internal actual fun NuvioAsyncImage(
         fallback,
         effectiveDesktopImageScaling,
     ) {
-        { state ->
+        transform@{ state ->
             when (state) {
                 is AsyncImagePainter.State.Loading -> {
                     placeholder?.let { state.copy(painter = it) } ?: state
                 }
                 is AsyncImagePainter.State.Success -> {
-                    state.result.image.toScaledBitmapPainter(effectiveDesktopImageScaling)
+                    val image = state.result.image
+                    if (image is AnimatedSkiaImage) {
+                        return@transform state.copy(painter = image.painter)
+                    }
+                    image.toScaledBitmapPainter(effectiveDesktopImageScaling)
                         ?.let { state.copy(painter = it) }
                         ?: state
                 }
@@ -116,6 +124,7 @@ internal actual fun NuvioAsyncImage(
 
     AsyncImage(
         model = requestModel,
+        imageLoader = imageLoader ?: SingletonImageLoader.get(context),
         contentDescription = contentDescription,
         modifier = modifier,
         transform = transform,
@@ -129,19 +138,31 @@ internal actual fun NuvioAsyncImage(
     )
 }
 
-private fun Any?.withDesktopHighQualitySize(context: PlatformContext): Any? {
+/**
+ * Prepares the request. Animated playback is opt-in; the memory-cache key records it so an animated and a
+ * still copy of one URL never share an entry.
+ */
+private fun Any?.withDesktopImageOptions(
+    context: PlatformContext,
+    highQualitySize: Boolean,
+    animated: Boolean,
+): Any? {
     if (this == null) return null
+    if (!highQualitySize && !animated) return this
 
-    return if (this is ImageRequest) {
+    val builder = if (this is ImageRequest) {
         newBuilder()
-            .size(MaxDesktopSourceSizePx)
-            .build()
     } else {
-        ImageRequest.Builder(context)
-            .data(this)
-            .size(MaxDesktopSourceSizePx)
-            .build()
+        ImageRequest.Builder(context).data(this)
     }
+    builder.apply {
+        if (highQualitySize) size(MaxDesktopSourceSizePx)
+        if (animated) {
+            extras[NuvioAnimatedImageKey] = true
+            memoryCacheKeyExtra("nuvio.animated", "true")
+        }
+    }
+    return builder.build()
 }
 
 private fun Image.toScaledBitmapPainter(desktopImageScaling: NuvioDesktopImageScaling): Painter? {

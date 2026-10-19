@@ -15,3 +15,5 @@ internal actual fun ImageLoader.Builder.configurePlatformImageLoader(): ImageLoa
     }
 
 internal actual val platformProvidesImageLoader: Boolean = true
+
+internal actual fun ImageLoader.Builder.configurePlatformBadgeImageLoader(): ImageLoader.Builder = this
