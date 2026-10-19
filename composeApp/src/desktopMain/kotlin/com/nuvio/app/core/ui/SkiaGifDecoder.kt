@@ -7,6 +7,7 @@ import coil3.decode.Decoder
 import coil3.decode.ImageSource
 import coil3.fetch.SourceFetchResult
 import coil3.request.Options
+import java.security.MessageDigest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jetbrains.skia.Bitmap
@@ -44,24 +45,33 @@ class SkiaGifDecoder(
         try {
             val count = codec.frameCount
             if (count <= 0) return null
+            // Read before any pixels are decoded: Skia reports a different count for some GIFs afterwards.
+            val repetitionCount = codec.repetitionCount
 
             val w = codec.width
             val h = codec.height
             if (w <= 0 || h <= 0) return null
 
-            val canAnimate = animate && count > 1 &&
-                w <= MaxAnimatedImageDimensionPx && h <= MaxAnimatedImageDimensionPx
+            val canAnimate = animate && count > 1 && w.toLong() * h <= MaxAnimatedImagePixels
             // Only GIFs are handled when not animating; other formats belong to Coil's default decoder.
             if (!isGif && !canAnimate) return null
 
-            if (canAnimate) return decodeAnimated(codec, data, count, w, h)
+            if (canAnimate) return decodeAnimated(codec, data, bytes, count, w, h, repetitionCount)
             return decodeStill(codec, w, h)
         } finally {
             codec.close()
         }
     }
 
-    private fun decodeAnimated(codec: Codec, data: Data, count: Int, w: Int, h: Int): DecodeResult {
+    private fun decodeAnimated(
+        codec: Codec,
+        data: Data,
+        bytes: ByteArray,
+        count: Int,
+        w: Int,
+        h: Int,
+        repetitionCount: Int,
+    ): DecodeResult {
         // framesInfo reads every frame in one native call; per-frame getFrameInfo(i) is unreliable in Skiko.
         val frames = codec.framesInfo
         val delays = IntArray(count) { frames[it].duration }
@@ -75,7 +85,9 @@ class SkiaGifDecoder(
                 height = h,
                 frameDelaysMs = delays,
                 requiredFrames = required,
+                repetitionCount = repetitionCount,
                 firstFrame = Image.makeFromBitmap(firstFrame),
+                contentKey = contentKeyOf(bytes),
             )
             return DecodeResult(image = image, isSampled = false)
         } finally {
@@ -144,8 +156,29 @@ class SkiaGifDecoder(
             val animate = options.extras[NuvioAnimatedImageKey] == true
             val isWebp = mimeType?.equals("image/webp", ignoreCase = true) == true ||
                 fileName?.endsWith(".webp", ignoreCase = true) == true
-            if (!isGif && !(animate && isWebp)) return null
+            if (!isGif) {
+                // Only animated WebP is claimed, so the many static WebP posters keep using Coil's decoder
+                // without being read or parsed here.
+                if (!animate || !isWebp || !result.source.isAnimatedWebp()) return null
+            }
             return SkiaGifDecoder(result.source, animate = animate, isGif = isGif)
         }
     }
 }
+
+/** True when the RIFF/WebP header's VP8X chunk has the animation flag set. Reads 21 bytes without consuming. */
+private fun ImageSource.isAnimatedWebp(): Boolean = runCatching {
+    val peek = source().peek()
+    if (!peek.request(HEADER_BYTES)) return@runCatching false
+    val header = peek.readByteArray(HEADER_BYTES)
+    fun matches(offset: Int, tag: String): Boolean =
+        tag.indices.all { header[offset + it] == tag[it].code.toByte() }
+    matches(0, "RIFF") && matches(8, "WEBP") && matches(12, "VP8X") &&
+        header[20].toInt() and ANIMATION_FLAG != 0
+}.getOrDefault(false)
+
+private const val HEADER_BYTES = 21L
+private const val ANIMATION_FLAG = 0x02
+
+private fun contentKeyOf(bytes: ByteArray): String =
+    MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }

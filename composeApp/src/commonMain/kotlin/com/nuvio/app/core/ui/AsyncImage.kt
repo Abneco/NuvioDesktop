@@ -16,6 +16,18 @@ internal enum class NuvioDesktopImageScaling {
     Disabled,
 }
 
+/** Desktop only: how animated GIF / WebP artwork plays. Other platforms already animate. */
+enum class NuvioDesktopAnimation {
+    /** Show the first frame (or the still image when one is provided). */
+    Off,
+
+    /** Show the still (or first frame) until the pointer is over the image, then play. */
+    OnHover,
+
+    /** Play whenever the image is on screen. */
+    Always,
+}
+
 @Composable
 internal expect fun NuvioAsyncImage(
     model: Any?,
@@ -35,6 +47,11 @@ internal expect fun NuvioAsyncImage(
     clipToBounds: Boolean = true,
     desktopImageScaling: NuvioDesktopImageScaling = NuvioDesktopImageScaling.Auto,
     imageLoader: ImageLoader? = null,
-    /** Desktop only: play animated GIF / WebP instead of showing the first frame. Other platforms already animate. */
-    desktopAnimatedImages: Boolean = false,
+    /** Desktop only: playback mode for animated GIF / WebP. */
+    desktopAnimation: NuvioDesktopAnimation = NuvioDesktopAnimation.Off,
+    /**
+     * Desktop only: a still image of the same artwork. It is shown instead of the animation until playback
+     * starts, and the animation is not even downloaded while the mode is [NuvioDesktopAnimation.Off].
+     */
+    desktopStillModel: Any? = null,
 )

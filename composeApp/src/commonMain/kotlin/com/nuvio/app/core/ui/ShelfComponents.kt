@@ -243,6 +243,8 @@ fun NuvioPosterCard(
     isWatched: Boolean = false,
     onClick: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
+    /** Optional still for animated [imageUrl] artwork (desktop). */
+    stillImageUrl: String? = null,
 ) {
     val posterCardStyle = rememberPosterCardStyleUiState()
     val tokens = MaterialTheme.nuvio
@@ -301,6 +303,8 @@ fun NuvioPosterCard(
                     contentDescription = title,
                     modifier = Modifier.matchParentSize(),
                     contentScale = ContentScale.Crop,
+                    desktopAnimation = posterCardStyle.animatedArtworkMode.toDesktopAnimation(),
+                    desktopStillModel = stillImageUrl,
                 )
             } else {
                 Text(

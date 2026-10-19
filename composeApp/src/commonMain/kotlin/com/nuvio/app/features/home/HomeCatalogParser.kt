@@ -43,12 +43,14 @@ internal object HomeCatalogParser {
                 }
 
                 val landscapePoster = meta.string("landscapePoster")?.takeIf { it.isNotBlank() }
+                val poster = meta.string("poster")
+                val background = meta.string("background")
                 val item = MetaPreview(
                     id = id,
                     type = type,
                     name = name,
-                    poster = meta.string("poster"),
-                    banner = meta.string("banner") ?: meta.string("background") ?: landscapePoster,
+                    poster = poster,
+                    banner = meta.string("banner") ?: background ?: landscapePoster,
                     logo = meta.string("logo"),
                     posterShape = meta.string("posterShape").toPosterShape(),
                     description = meta.string("description"),
@@ -59,6 +61,8 @@ internal object HomeCatalogParser {
                         genre.jsonPrimitive.contentOrNull?.takeIf { it.isNotBlank() }
                     },
                     landscapePoster = landscapePoster,
+                    stillPoster = stillArtwork(url = poster, still = meta.string("stillPoster")),
+                    stillBackground = stillArtwork(url = background, still = meta.string("stillBackground")),
                 )
                 if (seenKeys.add(item.stableKey())) {
                     add(item)
@@ -73,6 +77,11 @@ internal object HomeCatalogParser {
 
     private fun JsonObject.string(name: String): String? =
         this[name]?.jsonPrimitive?.contentOrNull
+
+    private fun stillArtwork(url: String?, still: String?): StillArtwork? {
+        if (url.isNullOrBlank() || still.isNullOrBlank() || still == url) return null
+        return StillArtwork(url = url, still = still)
+    }
 
     private fun JsonObject.array(name: String): JsonArray =
         this[name] as? JsonArray ?: JsonArray(emptyList())

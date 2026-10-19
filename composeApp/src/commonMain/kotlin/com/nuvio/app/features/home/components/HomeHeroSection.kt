@@ -1,5 +1,6 @@
 package com.nuvio.app.features.home.components
 
+import com.nuvio.app.core.ui.NuvioDesktopAnimation
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.MutatePriority
@@ -275,6 +276,7 @@ private fun HeroBackgroundLayers(
         AsyncImage(
             model = if (desktopFrame) originalTmdbImageUrl(imageUrl) else imageUrl,
             contentDescription = item.name,
+            desktopAnimation = NuvioDesktopAnimation.Always,
             modifier = backgroundModifier
                 .graphicsLayer {
                     val pageOffset = heroPageOffset(pagerState, page)

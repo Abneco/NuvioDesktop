@@ -33,7 +33,8 @@ internal actual fun NuvioAsyncImage(
     clipToBounds: Boolean,
     desktopImageScaling: NuvioDesktopImageScaling,
     imageLoader: ImageLoader?,
-    desktopAnimatedImages: Boolean,
+    desktopAnimation: NuvioDesktopAnimation,
+    desktopStillModel: Any?,
 ) {
     AsyncImage(
         model = model,

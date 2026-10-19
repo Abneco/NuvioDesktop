@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import coil3.compose.LocalPlatformContext
 import com.nuvio.app.core.i18n.localizedByteUnit
+import com.nuvio.app.core.ui.NuvioDesktopAnimation
 import com.nuvio.app.core.ui.NuvioAsyncImage
 import com.nuvio.app.core.ui.NuvioTokens
 import com.nuvio.app.core.ui.nuvio
@@ -119,7 +120,7 @@ internal fun StreamBadgeChip(
                 .widthIn(min = size.minImageWidth, max = size.maxImageWidth)
                 .clip(shape),
             contentScale = ContentScale.Fit,
-            desktopAnimatedImages = true,
+            desktopAnimation = NuvioDesktopAnimation.Always,
         )
     }
 }
