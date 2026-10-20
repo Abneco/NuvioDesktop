@@ -4,7 +4,7 @@ import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.request.CachePolicy
 import coil3.request.crossfade
-import com.nuvio.app.core.ui.configurePlatformBadgeImageLoader
+import com.nuvio.app.core.ui.addPlatformDecoders
 import kotlin.concurrent.Volatile
 import kotlinx.atomicfu.locks.SynchronizedObject
 import kotlinx.atomicfu.locks.synchronized
@@ -28,7 +28,7 @@ internal object BadgeImageLoader {
                 .memoryCachePolicy(CachePolicy.ENABLED)
                 .diskCachePolicy(CachePolicy.ENABLED)
                 .crossfade(false)
-                .configurePlatformBadgeImageLoader()
+                .components { addPlatformDecoders() }
                 .build()
             instance = loader
             return loader
