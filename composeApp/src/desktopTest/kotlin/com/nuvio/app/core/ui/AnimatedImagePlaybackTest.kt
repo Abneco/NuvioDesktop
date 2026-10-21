@@ -19,13 +19,10 @@ import coil3.PlatformContext
 import coil3.request.ImageRequest
 import coil3.request.SuccessResult
 import com.sun.net.httpserver.HttpServer
-import java.awt.image.BufferedImage
-import java.io.ByteArrayOutputStream
 import java.net.InetSocketAddress
 import java.util.Base64
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
-import javax.imageio.ImageIO
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertSame
@@ -119,10 +116,7 @@ class AnimatedImagePlaybackTest {
     }
 
     @Test
-    fun onHoverShowsTheStillUntilTheImageIsHovered() = withServer(
-        Asset("/art.gif", "image/gif", LOOPING_GIF),
-        Asset("/still.png", "image/png", solidPng(0xFFFF00)),
-    ) { server ->
+    fun onHoverPlaysOnlyWhileTheImageIsHovered() = withServer(Asset("/art.gif", "image/gif", LOOPING_GIF)) { server ->
         compose.setContent {
             NuvioAsyncImage(
                 model = server.url("/art.gif"),
@@ -130,44 +124,23 @@ class AnimatedImagePlaybackTest {
                 modifier = Modifier.size(64.dp).testTag("image"),
                 imageLoader = gifLoader(),
                 desktopAnimation = NuvioDesktopAnimation.OnHover,
-                desktopStillModel = server.url("/still.png"),
             )
         }
 
-        compose.waitForColor("image") { r, g, b -> r > 0.8f && g > 0.8f && b < 0.1f } // yellow still
-        Thread.sleep(500)
-        assertEquals(0, server.requests("/art.gif"), "The animation must not be downloaded before hover")
+        // Without the pointer over it, it stays on the first frame.
+        compose.waitForColor("image") { r, g, _ -> r > 0.8f && g < 0.1f }
+        Thread.sleep(700)
+        val idle = compose.colorAt("image")
+        assertTrue(idle.red > 0.8f && idle.green < 0.1f && idle.blue < 0.1f, "Expected the first (red) frame before hover")
 
         val image = compose.onNodeWithTag("image")
         image.performMouseInput { enter(center) }
-        compose.waitForColor("image") { r, g, _ -> r > 0.8f && g < 0.1f }
         compose.waitForColor("image") { r, g, _ -> g > 0.8f && r < 0.1f }
-        assertTrue(server.requests("/art.gif") >= 1)
+        compose.waitForColor("image") { r, _, b -> b > 0.8f && r < 0.1f }
 
+        // Leaving it returns to the first frame.
         image.performMouseInput { exit() }
-        compose.waitForColor("image") { r, g, b -> r > 0.8f && g > 0.8f && b < 0.1f } // back to the still
-    }
-
-    @Test
-    fun offShowsTheStillAndNeverRequestsTheAnimation() = withServer(
-        Asset("/art.gif", "image/gif", LOOPING_GIF),
-        Asset("/still.png", "image/png", solidPng(0xFFFF00)),
-    ) { server ->
-        compose.setContent {
-            NuvioAsyncImage(
-                model = server.url("/art.gif"),
-                contentDescription = null,
-                modifier = Modifier.size(64.dp).testTag("image"),
-                imageLoader = gifLoader(),
-                desktopAnimation = NuvioDesktopAnimation.Off,
-                desktopStillModel = server.url("/still.png"),
-            )
-        }
-
-        compose.waitForColor("image") { r, g, b -> r > 0.8f && g > 0.8f && b < 0.1f }
-        compose.onNodeWithTag("image").performMouseInput { enter(center) }
-        Thread.sleep(600)
-        assertEquals(0, server.requests("/art.gif"), "Off must never download the animation when a still exists")
+        compose.waitForColor("image") { r, g, _ -> r > 0.8f && g < 0.1f }
     }
 
     // endregion
@@ -321,11 +294,6 @@ class AnimatedImagePlaybackTest {
         }
     }
 
-    private fun solidPng(rgb: Int): ByteArray = ByteArrayOutputStream().apply {
-        ImageIO.write(BufferedImage(8, 8, BufferedImage.TYPE_INT_RGB).apply {
-            for (x in 0 until 8) for (y in 0 until 8) setRGB(x, y, rgb)
-        }, "png", this)
-    }.toByteArray()
 
     /** A one-frame green WebP, encoded with Skia so the test needs no binary fixture. */
     private fun staticWebp(): ByteArray {

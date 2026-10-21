@@ -3,20 +3,6 @@ package com.nuvio.app.features.home
 import com.nuvio.app.features.addons.ManagedAddon
 import com.nuvio.app.features.catalog.CatalogTarget
 
-/**
- * A still image an addon provides next to animated artwork. It only applies to the exact animated [url]
- * it was sent with, so artwork that is later replaced (custom poster URLs, TMDB artwork) never shows a
- * still that belongs to a different image.
- */
-data class StillArtwork(
-    val url: String,
-    val still: String,
-)
-
-/** The still to show for [displayUrl], or null when it is not the animated image this still belongs to. */
-fun StillArtwork?.stillFor(displayUrl: String?): String? =
-    this?.takeIf { it.url == displayUrl }?.still
-
 data class MetaPreview(
     val id: String,
     val type: String,
@@ -35,10 +21,6 @@ data class MetaPreview(
     val rawPosterUrl: String? = null,
     val landscapePoster: String? = null,
     val rawLandscapePosterUrl: String? = null,
-    /** Optional still for an animated [poster]; ignored by clients that do not know the field. */
-    val stillPoster: StillArtwork? = null,
-    /** Optional still for an animated `background` (shown on landscape cards). */
-    val stillBackground: StillArtwork? = null,
 )
 
 fun MetaPreview.stableKey(): String = "$type:$id"

@@ -1,6 +1,5 @@
 package com.nuvio.app.features.home.components
 
-import com.nuvio.app.features.home.stillFor
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.nuvio.app.core.format.formatReleaseDateForDisplay
@@ -34,8 +33,6 @@ fun HomePosterCard(
         item.rawPosterUrl
     }
 
-    val stillImageUrl = item.stillBackground.stillFor(imageUrl) ?: item.stillPoster.stillFor(imageUrl)
-
     HomePosterHoverPreview(
         item = item,
         isWatched = isWatched,
@@ -56,7 +53,6 @@ fun HomePosterCard(
             isWatched = isWatched,
             onClick = onClick,
             onLongClick = onLongClick,
-            stillImageUrl = stillImageUrl,
         )
     }
 }

@@ -1,6 +1,5 @@
 package com.nuvio.app.features.details
 
-import com.nuvio.app.features.home.StillArtwork
 import com.nuvio.app.features.streams.StreamBehaviorHints
 import com.nuvio.app.features.streams.StreamItem
 import com.nuvio.app.features.streams.StreamProxyHeaders
@@ -240,19 +239,12 @@ internal object MetaDetailsParser {
             val video = element as? JsonObject ?: return@mapNotNull null
             val id = video.string("id") ?: return@mapNotNull null
             val title = video.string("title") ?: video.string("name") ?: return@mapNotNull null
-            val thumbnail = video.string("thumbnail")
-            val stillThumbnail = video.string("stillThumbnail")
             MetaVideo(
                 id = id,
                 title = title,
                 released = video.string("released"),
                 available = video.boolean("available") ?: true,
-                thumbnail = thumbnail,
-                stillThumbnail = if (thumbnail.isNullOrBlank() || stillThumbnail.isNullOrBlank() || stillThumbnail == thumbnail) {
-                    null
-                } else {
-                    StillArtwork(url = thumbnail, still = stillThumbnail)
-                },
+                thumbnail = video.string("thumbnail"),
                 seasonPoster = video.string("seasonPoster") ?: video.string("season_poster_path"),
                 season = video.int("season"),
                 episode = video.int("episode"),

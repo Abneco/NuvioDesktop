@@ -1,7 +1,6 @@
 package com.nuvio.app.features.details
 
 import com.nuvio.app.features.home.MetaPreview
-import com.nuvio.app.features.home.StillArtwork
 import com.nuvio.app.features.streams.StreamItem
 
 data class MetaDetails(
@@ -94,8 +93,6 @@ data class MetaVideo(
     val released: String? = null,
     val available: Boolean = true,
     val thumbnail: String? = null,
-    /** Optional still for an animated [thumbnail]; ignored by clients that do not know the field. */
-    val stillThumbnail: StillArtwork? = null,
     val seasonPoster: String? = null,
     val season: Int? = null,
     val episode: Int? = null,

@@ -34,7 +34,6 @@ internal actual fun NuvioAsyncImage(
     desktopImageScaling: NuvioDesktopImageScaling,
     imageLoader: ImageLoader?,
     desktopAnimation: NuvioDesktopAnimation,
-    desktopStillModel: Any?,
 ) {
     AsyncImage(
         model = model,

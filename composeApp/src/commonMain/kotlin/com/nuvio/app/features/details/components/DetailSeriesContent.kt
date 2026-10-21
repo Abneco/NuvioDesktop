@@ -1,6 +1,5 @@
 package com.nuvio.app.features.details.components
 
-import com.nuvio.app.features.home.stillFor
 import com.nuvio.app.core.ui.rememberAnimatedArtworkAnimation
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.Crossfade
@@ -847,7 +846,6 @@ private fun EpisodeHorizontalCard(
                     .then(if (shouldBlurArtwork) Modifier.blur(18.dp) else Modifier),
                 contentScale = ContentScale.Crop,
                 desktopAnimation = rememberAnimatedArtworkAnimation(),
-                desktopStillModel = video.stillThumbnail.stillFor(imageUrl),
             )
         }
 
@@ -1237,7 +1235,6 @@ private fun EpisodeListCard(
                             .then(if (shouldBlurArtwork) Modifier.blur(18.dp) else Modifier),
                         contentScale = ContentScale.Crop,
                         desktopAnimation = rememberAnimatedArtworkAnimation(),
-                        desktopStillModel = video.stillThumbnail.stillFor(imageUrl),
                     )
                 } else {
                     Box(

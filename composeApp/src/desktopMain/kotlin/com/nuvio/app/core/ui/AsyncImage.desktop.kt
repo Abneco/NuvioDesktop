@@ -3,8 +3,6 @@ package com.nuvio.app.core.ui
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
@@ -74,117 +72,20 @@ internal actual fun NuvioAsyncImage(
     desktopImageScaling: NuvioDesktopImageScaling,
     imageLoader: ImageLoader?,
     desktopAnimation: NuvioDesktopAnimation,
-    desktopStillModel: Any?,
 ) {
     // Hover tracking only exists for On hover, so the common case pays nothing for it.
     val hoverSource = remember { MutableInteractionSource() }
     val hovered: State<Boolean> =
         if (desktopAnimation == NuvioDesktopAnimation.OnHover) hoverSource.collectIsHoveredAsState() else NeverHovered
-    val hoverPlaying: () -> Boolean = remember(hovered) { { hovered.value } }
-    val rootModifier =
-        if (desktopAnimation == NuvioDesktopAnimation.OnHover) modifier.hoverable(hoverSource) else modifier
-
-    if (desktopStillModel != null && desktopAnimation != NuvioDesktopAnimation.Always) {
-        // The still is the picture until playback starts. With Off the animation is never requested at
-        // all; with On hover it is requested on the first hover and drawn over the still, so there is no
-        // blank frame while it loads.
-        Box(modifier = rootModifier) {
-            DesktopImageLayer(
-                model = desktopStillModel,
-                contentDescription = contentDescription,
-                modifier = Modifier.fillMaxSize(),
-                placeholder = placeholder,
-                error = error,
-                fallback = fallback,
-                onLoading = onLoading,
-                onSuccess = onSuccess,
-                onError = onError,
-                alignment = alignment,
-                contentScale = contentScale,
-                alpha = alpha,
-                colorFilter = colorFilter,
-                filterQuality = filterQuality,
-                clipToBounds = clipToBounds,
-                desktopImageScaling = desktopImageScaling,
-                imageLoader = imageLoader,
-                animated = false,
-                playing = NeverPlaying,
-            )
-            if (desktopAnimation == NuvioDesktopAnimation.OnHover && hovered.value) {
-                DesktopImageLayer(
-                    model = model,
-                    contentDescription = contentDescription,
-                    modifier = Modifier.fillMaxSize(),
-                    placeholder = null,
-                    error = null,
-                    fallback = null,
-                    onLoading = null,
-                    onSuccess = null,
-                    onError = null,
-                    alignment = alignment,
-                    contentScale = contentScale,
-                    alpha = alpha,
-                    colorFilter = colorFilter,
-                    filterQuality = filterQuality,
-                    clipToBounds = clipToBounds,
-                    desktopImageScaling = desktopImageScaling,
-                    imageLoader = imageLoader,
-                    animated = true,
-                    playing = hoverPlaying,
-                )
-            }
-        }
-    } else {
-        DesktopImageLayer(
-            model = model,
-            contentDescription = contentDescription,
-            modifier = rootModifier,
-            placeholder = placeholder,
-            error = error,
-            fallback = fallback,
-            onLoading = onLoading,
-            onSuccess = onSuccess,
-            onError = onError,
-            alignment = alignment,
-            contentScale = contentScale,
-            alpha = alpha,
-            colorFilter = colorFilter,
-            filterQuality = filterQuality,
-            clipToBounds = clipToBounds,
-            desktopImageScaling = desktopImageScaling,
-            imageLoader = imageLoader,
-            animated = desktopAnimation != NuvioDesktopAnimation.Off,
-            playing = when (desktopAnimation) {
-                NuvioDesktopAnimation.Always -> AlwaysPlaying
-                NuvioDesktopAnimation.OnHover -> hoverPlaying
-                NuvioDesktopAnimation.Off -> NeverPlaying
-            },
-        )
+    val playing: () -> Boolean = when (desktopAnimation) {
+        NuvioDesktopAnimation.Always -> AlwaysPlaying
+        NuvioDesktopAnimation.OnHover -> remember(hovered) { { hovered.value } }
+        NuvioDesktopAnimation.Off -> NeverPlaying
     }
-}
+    val imageModifier =
+        if (desktopAnimation == NuvioDesktopAnimation.OnHover) modifier.hoverable(hoverSource) else modifier
+    val animated = desktopAnimation != NuvioDesktopAnimation.Off
 
-@Composable
-private fun DesktopImageLayer(
-    model: Any?,
-    contentDescription: String?,
-    modifier: Modifier,
-    placeholder: Painter?,
-    error: Painter?,
-    fallback: Painter?,
-    onLoading: ((AsyncImagePainter.State.Loading) -> Unit)?,
-    onSuccess: ((AsyncImagePainter.State.Success) -> Unit)?,
-    onError: ((AsyncImagePainter.State.Error) -> Unit)?,
-    alignment: Alignment,
-    contentScale: ContentScale,
-    alpha: Float,
-    colorFilter: ColorFilter?,
-    filterQuality: FilterQuality?,
-    clipToBounds: Boolean,
-    desktopImageScaling: NuvioDesktopImageScaling,
-    imageLoader: ImageLoader?,
-    animated: Boolean,
-    playing: () -> Boolean,
-) {
     val context = LocalPlatformContext.current
     val effectiveDesktopImageScaling = remember(desktopImageScaling) {
         if (IsWindowsDesktop) desktopImageScaling else NuvioDesktopImageScaling.Disabled
@@ -248,7 +149,7 @@ private fun DesktopImageLayer(
         model = requestModel,
         imageLoader = imageLoader ?: SingletonImageLoader.get(context),
         contentDescription = contentDescription,
-        modifier = modifier,
+        modifier = imageModifier,
         transform = transform,
         onState = onState,
         alignment = alignment,
