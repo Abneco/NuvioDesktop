@@ -48,6 +48,8 @@ interface PlayerEngineController {
     }
 
     suspend fun getMediaInfo(): PlayerMediaInfo = PlayerMediaInfo()
+    /** The loaded file's chapters, unsorted; empty when the engine cannot read them. */
+    suspend fun getChapters(): List<PlayerChapter> = emptyList()
 }
 
 enum class PlayerControlsAction {
