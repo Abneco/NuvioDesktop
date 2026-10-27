@@ -79,6 +79,11 @@ enum class PlayerControlsAction {
     DoubleTapSeekForward,
 }
 
+data class PlayerControlChapter(
+    val startMs: Long,
+    val title: String,
+)
+
 data class PlayerControlsState(
     val title: String = "",
     val episodeText: String = "",
@@ -267,6 +272,10 @@ data class PlayerControlsState(
     val notificationToken: Long = 0L,
     val party: PlayerControlPartyState = PlayerControlPartyState(),
     val badges: List<StreamBadge> = emptyList(),
+    val chapters: List<PlayerControlChapter> = emptyList(),
+    val chaptersLabel: String = "Chapters",
+    val chaptersPanelTitle: String = "Chapters",
+    val chapterRemainingTemplate: String = "{time} left",
 )
 
 data class PlayerControlFilterItem(

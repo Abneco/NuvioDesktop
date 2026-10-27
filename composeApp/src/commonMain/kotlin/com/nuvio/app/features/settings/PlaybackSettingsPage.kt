@@ -1263,7 +1263,9 @@ private fun PlaybackSettingsSection(
                     SettingsGroupDivider(isTablet = isTablet)
                     SettingsSwitchRow(
                         title = stringResource(Res.string.settings_playback_exo_chapters),
-                        description = stringResource(Res.string.settings_playback_exo_chapters_description),
+                        description = stringResource(
+                            if (isDesktop) Res.string.settings_playback_chapters_description else Res.string.settings_playback_exo_chapters_description,
+                        ),
                         checked = androidExoChaptersEnabled,
                         enabled = exoOptionsEnabled,
                         isTablet = isTablet,

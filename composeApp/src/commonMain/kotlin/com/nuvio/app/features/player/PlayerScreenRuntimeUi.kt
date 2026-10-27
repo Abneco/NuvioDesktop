@@ -259,7 +259,17 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
     }
     val partyControls = if (isDesktop) rememberPartyControlsState() else PlayerControlPartyState()
     val playerBadges = if (isDesktop) rememberPlayerBadges() else emptyList()
+    val controlChapters = chapters.mapIndexed { index, chapter ->
+        PlayerControlChapter(
+            startMs = chapter.startMs,
+            title = chapter.title ?: stringResource(Res.string.compose_player_chapter_number, index + 1),
+        )
+    }
     val playerControlsState = PlayerControlsState(
+        chapters = controlChapters,
+        chaptersLabel = stringResource(Res.string.compose_player_chapters),
+        chaptersPanelTitle = stringResource(Res.string.compose_player_panel_chapters, chapters.size),
+        chapterRemainingTemplate = stringResource(Res.string.compose_player_chapter_remaining, "{time}"),
         title = title,
         episodeText = episodeText,
         streamTitle = activeStreamTitle,
@@ -975,6 +985,9 @@ private fun PlayerScreenRuntime.handlePlayerControlsEvent(type: String, value: D
         "setPlaybackSpeed" -> {
             if (!isPartySynced) return false
             selectPlaybackSpeed(value.toFloat())
+        }
+        "selectChapter" -> {
+            selectChapter(value.toInt())
         }
         "reloadSources" -> {
             prepareSourcesForPlayerControls(forceRefresh = true)
