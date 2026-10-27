@@ -259,6 +259,20 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
     }
     val partyControls = if (isDesktop) rememberPartyControlsState() else PlayerControlPartyState()
     val playerBadges = if (isDesktop) rememberPlayerBadges() else emptyList()
+    val streamInfoSections = if (isDesktop) {
+        rememberStreamInfoSections(
+            addonName = activeProviderName,
+            addonLogo = activeAddonLogo,
+            streamName = activeStreamTitle,
+            streamDescription = activeStreamSubtitle,
+            playbackEngine = playerController?.playbackEngine,
+            serverPlayback = serverPlaybackSummary(),
+            mediaInfo = streamMediaInfo,
+            audioTrack = audioTracks.firstOrNull { it.index == selectedAudioIndex },
+            subtitleTrack = subtitleTracks.firstOrNull { it.index == selectedSubtitleIndex }.takeIf { !useCustomSubtitles },
+            addonSubtitle = selectedAddonSubtitle.takeIf { useCustomSubtitles },
+        )
+    } else emptyList()
     val controlChapters = chapters.mapIndexed { index, chapter ->
         PlayerControlChapter(
             startMs = chapter.startMs,
@@ -270,6 +284,8 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
         chaptersLabel = stringResource(Res.string.compose_player_chapters),
         chaptersPanelTitle = stringResource(Res.string.compose_player_panel_chapters, chapters.size),
         chapterRemainingTemplate = stringResource(Res.string.compose_player_chapter_remaining, "{time}"),
+        streamInfoLabel = stringResource(Res.string.cd_stream_info),
+        streamInfoSections = streamInfoSections,
         title = title,
         episodeText = episodeText,
         streamTitle = activeStreamTitle,
@@ -987,6 +1003,7 @@ private fun PlayerScreenRuntime.handlePlayerControlsEvent(type: String, value: D
             if (!isPartySynced) return false
             selectPlaybackSpeed(value.toFloat())
         }
+        "streamInfo" -> refreshStreamInfo()
         "selectChapter" -> {
             selectChapter(value.toInt())
         }

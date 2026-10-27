@@ -1671,6 +1671,24 @@ private fun PlayerControlsState.toControlsJson(isFullscreen: Boolean, onImageRea
         appendJsonField("chaptersPanelTitle", chaptersPanelTitle)
         append(',')
         appendJsonField("chapterRemainingTemplate", chapterRemainingTemplate)
+        append(',')
+        appendJsonField("streamInfoLabel", streamInfoLabel)
+        append(',')
+        appendJsonArrayField("streamInfoSections", streamInfoSections) { section ->
+            append("{\"title\":").append(section.title.toJsonString())
+            append(",\"logo\":").append((section.logo ?: "").toJsonString())
+            append(",\"name\":").append((section.name ?: "").toJsonString())
+            append(",\"subtitle\":").append((section.subtitle ?: "").toJsonString())
+            append(",\"description\":").append((section.description ?: "").toJsonString())
+            append(",\"items\":[")
+            section.items.forEachIndexed { index, item ->
+                if (index > 0) append(',')
+                append("{\"label\":").append(item.label.toJsonString())
+                append(",\"value\":").append(item.value.toJsonString())
+                append('}')
+            }
+            append("]}")
+        }
         append(",\"party\":")
         append(partyJson.encodeToString(PlayerControlPartyState.serializer(), party.withWebviewImages(onImageReady)))
         append('}')

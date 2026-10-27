@@ -84,6 +84,20 @@ data class PlayerControlChapter(
     val title: String,
 )
 
+data class PlayerControlInfoItem(
+    val label: String,
+    val value: String,
+)
+
+data class PlayerControlInfoSection(
+    val title: String,
+    val logo: String? = null,
+    val name: String? = null,
+    val subtitle: String? = null,
+    val description: String? = null,
+    val items: List<PlayerControlInfoItem> = emptyList(),
+)
+
 data class PlayerControlsState(
     val title: String = "",
     val episodeText: String = "",
@@ -276,6 +290,8 @@ data class PlayerControlsState(
     val chaptersLabel: String = "Chapters",
     val chaptersPanelTitle: String = "Chapters",
     val chapterRemainingTemplate: String = "{time} left",
+    val streamInfoLabel: String = "Stream info",
+    val streamInfoSections: List<PlayerControlInfoSection> = emptyList(),
 )
 
 data class PlayerControlFilterItem(

@@ -196,7 +196,12 @@ button:disabled {
 .player.chrome-hidden .metadata,
 .player.chrome-hidden .header-actions,
 .player.chrome-hidden .center-controls,
-.player.chrome-hidden .progress {
+.player.chrome-hidden .progress,
+.player.info-open .top-gradient,
+.player.info-open .bottom-gradient,
+.player.info-open .metadata,
+.player.info-open .center-controls,
+.player.info-open .progress {
   opacity: 0;
   pointer-events: none;
 }
@@ -3603,4 +3608,90 @@ svg {
   fill: currentColor;
   stroke: none;
   pointer-events: none;
+}
+
+.stream-info-modal {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+  padding: 20px 44px;
+  background:
+    linear-gradient(to top, rgba(0, 0, 0, .6), rgba(0, 0, 0, .4) 30%, rgba(0, 0, 0, .2) 60%, transparent),
+    linear-gradient(to right, rgba(0, 0, 0, .88), transparent),
+    rgba(0, 0, 0, .34);
+}
+
+.stream-info-content {
+  display: flex;
+  max-width: 100%;
+  max-height: 100%;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  color: #fff;
+}
+
+.stream-info-section-title {
+  margin-bottom: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .5px;
+  color: rgba(255, 255, 255, .5);
+}
+
+.stream-info-source {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.stream-info-logo {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: 6px;
+  object-fit: contain;
+}
+
+.stream-info-names {
+  min-width: 0;
+}
+
+.stream-info-name {
+  overflow: hidden;
+  font-size: 16px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stream-info-secondary {
+  overflow: hidden;
+  font-size: 14px;
+  color: rgba(255, 255, 255, .7);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stream-info-source + .stream-info-secondary {
+  margin-top: 2px;
+}
+
+.stream-info-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 28px;
+  margin-top: 6px;
+}
+
+.stream-info-label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, .5);
+}
+
+.stream-info-value {
+  overflow: hidden;
+  font-size: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

@@ -79,6 +79,10 @@ const chaptersLabel = document.getElementById("chaptersLabel");
 const chapterTitle = document.getElementById("chapterTitle");
 const chapterMarks = document.getElementById("chapterMarks");
 const chaptersModal = document.getElementById("chaptersModal");
+const streamInfoButton = document.getElementById("streamInfoButton");
+const streamInfoLabel = document.getElementById("streamInfoLabel");
+const streamInfoModal = document.getElementById("streamInfoModal");
+const streamInfoContent = document.getElementById("streamInfoContent");
 const chaptersPanelTitle = document.getElementById("chaptersPanelTitle");
 const chaptersCloseButton = document.getElementById("chaptersCloseButton");
 const chapterList = document.getElementById("chapterList");
@@ -987,6 +991,7 @@ const modalByName = {
   sources: sourceModal,
   episodes: episodesModal,
   chapters: chaptersModal,
+  streamInfo: streamInfoModal,
   submitIntro: submitIntroModal,
   p2pConsent: p2pConsentModal,
   party: partyModal,
@@ -2126,6 +2131,75 @@ const currentChapterIndex = chapters => {
 
 let chapterListSignature = "";
 
+let streamInfoSignature = "";
+
+const renderStreamInfoModal = () => {
+  const sections = Array.isArray(state.streamInfoSections) ? state.streamInfoSections : [];
+  const signature = JSON.stringify(sections);
+  if (signature === streamInfoSignature) return;
+  streamInfoSignature = signature;
+  streamInfoContent.textContent = "";
+  sections.forEach(section => {
+    const block = document.createElement("div");
+    block.className = "stream-info-section";
+    const title = document.createElement("div");
+    title.className = "stream-info-section-title";
+    title.textContent = String(section.title || "").toUpperCase();
+    block.appendChild(title);
+    if (section.name) {
+      const head = document.createElement("div");
+      head.className = "stream-info-source";
+      if (section.logo) {
+        const logo = document.createElement("img");
+        logo.className = "stream-info-logo";
+        logo.alt = "";
+        logo.draggable = false;
+        logo.addEventListener("error", () => logo.remove());
+        logo.src = section.logo;
+        head.appendChild(logo);
+      }
+      const names = document.createElement("div");
+      names.className = "stream-info-names";
+      const name = document.createElement("div");
+      name.className = "stream-info-name";
+      name.textContent = section.name;
+      names.appendChild(name);
+      if (section.subtitle) {
+        const subtitle = document.createElement("div");
+        subtitle.className = "stream-info-secondary";
+        subtitle.textContent = section.subtitle;
+        names.appendChild(subtitle);
+      }
+      head.appendChild(names);
+      block.appendChild(head);
+      if (section.description) {
+        const description = document.createElement("div");
+        description.className = "stream-info-secondary";
+        description.textContent = section.description;
+        block.appendChild(description);
+      }
+    }
+    if (Array.isArray(section.items) && section.items.length) {
+      const row = document.createElement("div");
+      row.className = "stream-info-row";
+      section.items.forEach(item => {
+        const cell = document.createElement("div");
+        cell.className = "stream-info-item";
+        const label = document.createElement("div");
+        label.className = "stream-info-label";
+        label.textContent = item.label;
+        const value = document.createElement("div");
+        value.className = "stream-info-value";
+        value.textContent = item.value;
+        cell.append(label, value);
+        row.appendChild(cell);
+      });
+      block.appendChild(row);
+    }
+    streamInfoContent.appendChild(block);
+  });
+};
+
 const renderChaptersModal = (modalOpened = false) => {
   const chapters = Array.isArray(state.chapters) ? state.chapters : [];
   const durationMs = Math.max(0, Number(state.durationMs) || 0);
@@ -2230,6 +2304,7 @@ const renderActiveModal = (modalOpened = false) => {
   if (activeModal === "sources") renderSourceModal(modalOpened);
   if (activeModal === "episodes") renderEpisodesModal(modalOpened);
   if (activeModal === "chapters") renderChaptersModal(modalOpened);
+  if (activeModal === "streamInfo") renderStreamInfoModal();
   if (activeModal === "submitIntro") renderSubmitIntroModal();
   if (activeModal === "p2pConsent") renderP2pConsentModal();
   if (activeModal === "party") renderPartyModal();
@@ -2568,6 +2643,7 @@ const renderChrome = () => {
   if (!state.isInPip && isPipLocked) setPipLocked(false);
   root.classList.toggle("chrome-hidden", Boolean(showError || !state.controlsVisible));
   root.classList.toggle("modal-open", Boolean(activeModal));
+  root.classList.toggle("info-open", activeModal === "streamInfo");
   root.classList.toggle("source-visible", Boolean(!showError && !isPlaying && !state.isLoading && (state.streamTitle || state.providerName)));
   syncHiddenCursor();
   const showOpening = renderOpeningOverlay(showError);
@@ -2611,6 +2687,8 @@ const renderChrome = () => {
   setVisible(chaptersButton, hasChapters);
   chaptersLabel.textContent = state.chaptersLabel || "Chapters";
   setActionButtonLabel("chapters", state.chaptersLabel || "Chapters");
+  streamInfoLabel.textContent = state.streamInfoLabel || "Stream info";
+  setActionButtonLabel("streamInfo", state.streamInfoLabel || "Stream info");
   renderChapterMarks();
   if (!hasChapters && activeModal === "chapters") closePlayerModal(false);
   syncActionFocusState();
@@ -3028,6 +3106,12 @@ document.querySelectorAll("[data-command]").forEach(button => {
     }
     if (command === "chapters") {
       openPlayerModal("chapters");
+      return;
+    }
+    if (command === "streamInfo") {
+      streamInfoSignature = "";
+      send("streamInfo", 0);
+      openPlayerModal("streamInfo");
       return;
     }
     if (command === "submitIntro") {
