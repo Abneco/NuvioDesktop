@@ -1672,6 +1672,8 @@ private fun PlayerControlsState.toControlsJson(isFullscreen: Boolean, onImageRea
         append(',')
         appendJsonField("chapterRemainingTemplate", chapterRemainingTemplate)
         append(',')
+        appendJsonField("autoSyncedLabel", autoSyncedLabel)
+        append(',')
         appendJsonField("streamInfoLabel", streamInfoLabel)
         append(',')
         appendJsonArrayField("streamInfoSections", streamInfoSections) { section ->
@@ -1891,6 +1893,8 @@ private fun StringBuilder.appendSubtitleOptionItemJson(item: PlayerControlSubtit
     appendJsonField("metadata", item.metadata)
     append(',')
     appendJsonField("isSelected", item.isSelected)
+    append(',')
+    appendJsonField("isAutoSynced", item.isAutoSynced)
     append('}')
 }
 
